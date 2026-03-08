@@ -14,9 +14,11 @@
         PencilRuler,
         Users,
         SplitSquareVerticalIcon,
+        X,
     } from "@lucide/svelte";
     import gsap from "gsap";
     import { ScrollTrigger } from "gsap/ScrollTrigger";
+    import { fade, scale } from "svelte/transition";
     import { onMount } from "svelte";
     import * as Carousel from "$lib/components/ui/carousel/index.js";
     import SplitReveal from "$lib/motion-core/split-reveal/SplitReveal.svelte";
@@ -39,7 +41,7 @@
             title: "Portfolio Website",
             thumbnail1: "/logo.svg",
             thumbnail2: "/logo.svg",
-            images: [],
+            images: ["/logo.svg"],
             shortDescription: "My personnal website",
             description:
                 "A personal site that showcases my work, experiments, and background through an interface focused on motion, typography, and clarity.",
@@ -58,20 +60,21 @@
             links: [
                 {
                     label: "GitHub",
-                    href: "https://github.com/yka-dev",
+                    href: "https://github.com/yka-dev/yassine-ak",
                     icon: Github,
                 },
                 {
-                    label: "Live Demo",
-                    href: "/",
+                    label: "Website",
+                    href: "https://yassine-ak.dev",
+                    icon: Globe,
                 },
             ],
         },
         {
             title: "Measurely",
             thumbnail1: "/logo.svg",
-            thumbnail2: "/logo.svg",
-            images: [],
+            thumbnail2: "/image3.png",
+            images: ["/image3.png"],
             shortDescription: "Analytics website",
             description:
                 "A concept project centered on clean interfaces and practical user flows for viewing and managing measurements in a clear and intuitive way.",
@@ -90,7 +93,7 @@
             links: [
                 {
                     label: "GitHub",
-                    href: "https://github.com/yka-dev",
+                    href: "https://github.com/Measurely-dev/Measurely",
                     icon: Github,
                 },
             ],
@@ -99,7 +102,7 @@
             title: "CPP_",
             thumbnail1: "/logo.svg",
             thumbnail2: "/logo.svg",
-            images: [],
+            images: ["/logo.svg"],
             shortDescription: "Vscode extension",
             description:
                 "A project focused on sharpening my understanding of lower-level programming concepts and problem solving through C++ practice and experimentation.",
@@ -118,14 +121,14 @@
             links: [
                 {
                     label: "GitHub",
-                    href: "https://github.com/yka-dev",
+                    href: "https://github.com/yka-dev/CPP_extension",
                     icon: Github,
                 },
             ],
         },
         {
             title: "Have something in mind ?",
-            thumbnail: "/logo.svg",
+            thumbnail1: "/logo.svg",
             shortDescription:
                 "Contact me for any project or idea that you have in mind.",
         },
@@ -139,9 +142,27 @@
     let displayedProjectIndex = $state(0);
     let isProjectDetailsVisible = $state(true);
     let projectSwapTimeout: ReturnType<typeof setTimeout> | undefined;
+    let isGalleryOpen = $state(false);
+    let galleryApi:
+        | import("$lib/components/ui/carousel/context.js").CarouselAPI
+        | undefined;
+    let gallerySelectedIndex = $state(0);
 
-    const selectedProject = $derived(projects[selectedProjectIndex]);
     const displayedProject = $derived(projects[displayedProjectIndex]);
+    const galleryImages = $derived(displayedProject.images ?? []);
+
+    const openGallery = () => {
+        if (!galleryImages.length) return;
+        gallerySelectedIndex = 0;
+        isGalleryOpen = true;
+        document.body.style.overflow = "hidden";
+    };
+
+    const closeGallery = () => {
+        isGalleryOpen = false;
+        galleryApi = undefined;
+        document.body.style.overflow = "";
+    };
 
     const showProjectDetails = (index: number) => {
         if (index === displayedProjectIndex) return;
@@ -228,6 +249,7 @@
             trigger?.kill();
             animation?.kill();
             if (projectSwapTimeout) clearTimeout(projectSwapTimeout);
+            document.body.style.overflow = "";
             window.removeEventListener("scroll", updateScrollProgress);
             window.removeEventListener("resize", updateScrollProgress);
         };
@@ -257,11 +279,11 @@
     />
 </svelte:head>
 
-<!-- <PlasmaGrid
+<PlasmaGrid
     color={COLOR_PRESETS.light.color}
     highlightColor={COLOR_PRESETS.light.highlightColor}
-    class={`fixed inset-0 z-10 h-screen w-screen opacity-50`}
-/> -->
+    class={`fixed inset-0 z-10 h-screen w-screen opacity-10`}
+/>
 
 {#if loading}
     <div
@@ -407,7 +429,7 @@
                 delay={0.2}
                 lines.duration={0.02}
                 mode="lines"
-                class="text-left text-muted-foreground text-lg max-w-200 font-sans"
+                class="text-left text-muted-foreground text-lg max-w-200 font-sans p-5"
             >
                 Hi, I'm Yassine Akhouayri. I'm 18 years old and currently living
                 in Montreal, Canada. I’ve always been curious about how
@@ -468,7 +490,7 @@
                 </div>
 
                 <div
-                    class="flex justify-center mt-5"
+                    class="flex justify-center mt-5 p-10"
                     bind:this={workCarouselSection}
                 >
                     <Carousel.Root
@@ -569,7 +591,7 @@
                                     background: color-mix(in oklab, var(--background) 70%, transparent);
                                     backdrop-filter: blur(calc(var(--spacing) * 1));
                                 "
-                                class="static translate-y-0"
+                                class="static translate-y-0 cursor-pointer"
                                 size="icon-lg"
                                 variant="outline"
                             />
@@ -582,7 +604,7 @@
                                     background: color-mix(in oklab, var(--background) 70%, transparent);
                                     backdrop-filter: blur(calc(var(--spacing) * 1));
                                 "
-                                class="static translate-y-0"
+                                class="static translate-y-0 cursor-pointer"
                                 size="icon-lg"
                                 variant="outline"
                             />
@@ -590,7 +612,7 @@
                     </Carousel.Root>
                 </div>
 
-                <div class="mt-12 p-2 md:p-0 w-287">
+                <div class="mt-12 p-2 md:p-0 max-w-287">
                     <!-- The project detailed information -->
                     <div
                         class="transition-opacity duration-200"
@@ -602,7 +624,10 @@
                                 <div
                                     class="flex flex-wrap items-center gap-3 pb-2"
                                 >
-                                    <SplitReveal triggerOnScroll={true}>
+                                    <SplitReveal
+                                        triggerOnScroll={true}
+                                        mode="chars"
+                                    >
                                         <h3
                                             class="font-serif text-4xl text-foreground"
                                         >
@@ -642,19 +667,24 @@
                                     class="grid gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:items-start"
                                 >
                                     <div class="flex flex-col gap-6">
-                                        <div
-                                            class="aspect-16/10 max-w-md overflow-hidden rounded-xl border border-border/60"
-                                        >
-                                            <img
-                                                src={displayedProject.thumbnail2}
-                                                alt={displayedProject.title}
-                                                class="h-full w-full object-cover hover:scale-105 cursor-pointer transition"
-                                            />
-                                        </div>
+                                        <SplitReveal triggerOnScroll={true}>
+                                            <button
+                                                type="button"
+                                                class="aspect-16/10 max-w-md overflow-hidden rounded-xl border border-border/60 text-left"
+                                                onclick={openGallery}
+                                            >
+                                                <img
+                                                    src={displayedProject.thumbnail2}
+                                                    alt={displayedProject.title}
+                                                    class="h-full w-full object-cover cursor-pointer"
+                                                />
+                                            </button>
+                                        </SplitReveal>
 
                                         <div class="flex flex-col gap-3">
                                             {#each displayedProject.techStack as tech}
                                                 <SplitReveal
+                                                    mode={"lines"}
                                                     triggerOnScroll={true}
                                                 >
                                                     <div
@@ -671,7 +701,10 @@
                                     </div>
 
                                     <div class="flex flex-col gap-6">
-                                        <SplitReveal triggerOnScroll={true}>
+                                        <SplitReveal
+                                            mode="lines"
+                                            triggerOnScroll={true}
+                                        >
                                             <p
                                                 class="text-base leading-7 text-muted-foreground font-sans"
                                             >
@@ -680,14 +713,20 @@
                                         </SplitReveal>
 
                                         <div class="flex flex-col gap-3">
-                                            <SplitReveal triggerOnScroll={true}>
+                                            <SplitReveal
+                                                mode="chars"
+                                                triggerOnScroll={true}
+                                            >
                                                 <h4
                                                     class="text-sm font-bold font-sans tracking-[0.2em] text-muted-foreground"
                                                 >
                                                     Features
                                                 </h4>
                                             </SplitReveal>
-                                            <SplitReveal triggerOnScroll={true}>
+                                            <SplitReveal
+                                                mode="lines"
+                                                triggerOnScroll={true}
+                                            >
                                                 <ul
                                                     class="list-disc space-y-2 pl-5 text-base leading-7 text-muted-foreground font-sans"
                                                 >
@@ -698,7 +737,10 @@
                                             </SplitReveal>
                                         </div>
 
-                                        <SplitReveal triggerOnScroll={true}>
+                                        <SplitReveal
+                                            mode="lines"
+                                            triggerOnScroll={true}
+                                        >
                                             <p
                                                 class="text-base leading-7 text-muted-foreground"
                                             >
@@ -739,5 +781,111 @@
                 <div class="flex justify-center"></div>
             </div>
         </section>
+
+        <section
+            class="flex p-2 border-t border-border w-full items-center justify-center text-muted-foreground font-mono text-sm"
+        >
+            All rights reserved © 2026 Yassine Akhouayri
+        </section>
     </div>
+
+    {#if isGalleryOpen}
+        <div
+            transition:fade={{ duration: 100 }}
+            class="fixed inset-0 z-50 flex items-center justify-center bg-background/90 p-6 backdrop-blur-sm"
+            role="button"
+            tabindex="0"
+            aria-label="Close gallery"
+            onclick={closeGallery}
+            onkeydown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    closeGallery();
+                }
+            }}
+        >
+            <button
+                type="button"
+                aria-label="Close gallery"
+                class="absolute top-6 right-6 flex h-10 w-10 items-center justify-center rounded-full border border-border/60 text-foreground transition-colors hover:bg-muted"
+                onclick={closeGallery}
+            >
+                <X size={18} />
+            </button>
+
+            <div
+                transition:scale={{ duration: 180, start: 0.96 }}
+                class="w-full max-w-5xl"
+                role="presentation"
+                onclick={(event) => event.stopPropagation()}
+                onkeydown={(event) => event.stopPropagation()}
+            >
+                <Carousel.Root
+                    opts={{
+                        align: "center",
+                        loop: galleryImages.length > 1,
+                    }}
+                    setApi={(api) => {
+                        galleryApi = api;
+                        gallerySelectedIndex = api?.selectedScrollSnap() ?? 0;
+                        api?.on("select", () => {
+                            gallerySelectedIndex = api.selectedScrollSnap();
+                        });
+                    }}
+                    class="w-full"
+                >
+                    <Carousel.Content class="-ms-4">
+                        {#each galleryImages as image, imageIndex (imageIndex)}
+                            <Carousel.Item class="ps-4 basis-full">
+                                <div
+                                    class="flex aspect-16/10 items-center justify-center overflow-hidden rounded-2xl border border-border/60 bg-black/20"
+                                >
+                                    <img
+                                        src={image}
+                                        alt={`${displayedProject.title} image ${imageIndex + 1}`}
+                                        class="h-full w-full object-fill"
+                                    />
+                                </div>
+                            </Carousel.Item>
+                        {/each}
+                    </Carousel.Content>
+
+                    {#if galleryImages.length > 1}
+                        <Carousel.Previous
+                            class="left-4 cursor-pointer"
+                            size="icon-lg"
+                            variant="outline"
+                            style="
+                                                                width: calc(var(--spacing) * 10);
+                                                                height: calc(var(--spacing) * 10);
+                                                                border-radius: var(--radius);
+                                                                border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+                                                                background: color-mix(in oklab, var(--background) 70%, transparent);
+                                                                backdrop-filter: blur(calc(var(--spacing) * 1));
+                                                            "
+                        />
+                        <Carousel.Next
+                            class="right-4 cursor-pointer"
+                            size="icon-lg"
+                            variant="outline"
+                            style="
+                                                                width: calc(var(--spacing) * 10);
+                                                                height: calc(var(--spacing) * 10);
+                                                                border-radius: var(--radius);
+                                                                border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+                                                                background: color-mix(in oklab, var(--background) 70%, transparent);
+                                                                backdrop-filter: blur(calc(var(--spacing) * 1));
+                                                            "
+                        />
+                    {/if}
+                </Carousel.Root>
+
+                <div
+                    class="mt-4 text-center font-mono text-sm text-muted-foreground"
+                >
+                    {gallerySelectedIndex + 1}/{galleryImages.length}
+                </div>
+            </div>
+        </div>
+    {/if}
 </div>
