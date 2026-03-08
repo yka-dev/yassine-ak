@@ -1,9 +1,13 @@
 <script lang="ts">
     import PlasmaGrid from "$lib/motion-core/plasma-grid/PlasmaGrid.svelte";
+    import { Github, Linkedin } from "@lucide/svelte";
+    import gsap from "gsap";
+    import { ScrollTrigger } from "gsap/ScrollTrigger";
     import { onMount } from "svelte";
     import * as Carousel from "$lib/components/ui/carousel/index.js";
     import SplitReveal from "$lib/motion-core/split-reveal/SplitReveal.svelte";
     import TextLoop from "$lib/motion-core/text-loop/TextLoop.svelte";
+    import Highlighter from "$lib/components/ori/text-highlighter/text-highlighter.svelte";
 
     const COLOR_PRESETS = {
         dark: {
@@ -11,8 +15,8 @@
             highlightColor: "#572400",
         },
         light: {
-            color: "#FFFFFF",
-            highlightColor: "#FF6900",
+            color: "#CBCBCB",
+            highlightColor: "#000000",
         },
     };
     const projects = [
@@ -41,8 +45,8 @@
         },
     ];
 
-    let isDark = $state(true);
     let scrollProgress = $state(0);
+    let workCarouselSection: HTMLDivElement | undefined;
 
     const clamp = (value: number, min = 0, max = 1) =>
         Math.min(max, Math.max(min, value));
@@ -65,15 +69,7 @@
     };
 
     onMount(() => {
-        isDark = document.documentElement.classList.contains("dark");
-        const observer = new MutationObserver(() => {
-            isDark = document.documentElement.classList.contains("dark");
-        });
-
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["class"],
-        });
+        gsap.registerPlugin(ScrollTrigger);
 
         updateScrollProgress();
         window.addEventListener("scroll", updateScrollProgress, {
@@ -81,8 +77,40 @@
         });
         window.addEventListener("resize", updateScrollProgress);
 
+        let animation: gsap.core.Tween | undefined;
+        let trigger: ScrollTrigger | undefined;
+
+        if (workCarouselSection) {
+            const cards = workCarouselSection.querySelectorAll("article");
+            const controls = workCarouselSection.querySelectorAll(
+                "[data-carousel-controls]",
+            );
+
+            gsap.set([...cards, ...controls], {
+                y: 48,
+                opacity: 0,
+            });
+
+            animation = gsap.to([...cards, ...controls], {
+                y: 0,
+                opacity: 1,
+                duration: 0.6,
+                ease: "power3.out",
+                stagger: 0.05,
+                delay: 1,
+                scrollTrigger: {
+                    trigger: workCarouselSection,
+                    start: "top 80%",
+                    once: true,
+                },
+            });
+
+            trigger = animation.scrollTrigger;
+        }
+
         return () => {
-            observer.disconnect();
+            trigger?.kill();
+            animation?.kill();
             window.removeEventListener("scroll", updateScrollProgress);
             window.removeEventListener("resize", updateScrollProgress);
         };
@@ -90,7 +118,6 @@
 
     const heroOpacity = $derived(mapRange(scrollProgress, 0, 1, 1, 0));
     const heroScale = $derived(mapRange(scrollProgress, 0, 1, 1, 0.82));
-    const plasmaOpacity = $derived(clamp(heroOpacity * 100, 20, 100));
 
     const contentOpacity = $derived(mapRange(scrollProgress, 0.72, 1, 0, 1));
     const contentScale = $derived(mapRange(scrollProgress, 0.72, 1, 0.92, 1));
@@ -114,26 +141,59 @@
 </svelte:head>
 
 <PlasmaGrid
-    color={COLOR_PRESETS.dark.color}
-    highlightColor={COLOR_PRESETS.dark.highlightColor}
-    class={`fixed inset-0 z-10 h-screen w-screen opacity-${plasmaOpacity}`}
+    color={COLOR_PRESETS.light.color}
+    highlightColor={COLOR_PRESETS.light.highlightColor}
+    class={`fixed inset-0 z-10 h-screen w-screen opacity-40`}
 />
-<div class="relative dark bg-background">
+<div class="relative bg-background">
     <header
         class="fixed top-0 left-0 right-0 z-30 flex items-center justify-center"
-        style="
-            padding-inline: calc(var(--spacing) * 6);
-            padding-block: calc(var(--spacing) * 3);
-        "
     >
         <img
             src="/logo.svg"
             alt="yka."
             style="
-                height: calc(var(--spacing) * 29);
+                height: calc(var(--spacing) * 30);
                 width: auto;
             "
         />
+
+        <div class="flex items-center gap-2">
+            <a
+                href="https://github.com/yka-dev"
+                aria-label="GitHub"
+                target="_blank"
+                rel="noreferrer"
+                class="flex items-center justify-center text-foreground/80 transition-colors hover:text-foreground"
+                style="
+                    width: calc(var(--spacing) * 10);
+                    height: calc(var(--spacing) * 10);
+                    border-radius: var(--radius);
+                    border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+                    background: color-mix(in oklab, var(--background) 70%, transparent);
+                    backdrop-filter: blur(calc(var(--spacing) * 1));
+                "
+            >
+                <Github size={18} />
+            </a>
+            <a
+                href="https://www.linkedin.com/in/yassine-akhouayri"
+                aria-label="LinkedIn"
+                target="_blank"
+                rel="noreferrer"
+                class="flex items-center justify-center text-foreground/80 transition-colors hover:text-foreground"
+                style="
+                    width: calc(var(--spacing) * 10);
+                    height: calc(var(--spacing) * 10);
+                    border-radius: var(--radius);
+                    border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+                    background: color-mix(in oklab, var(--background) 70%, transparent);
+                    backdrop-filter: blur(calc(var(--spacing) * 1));
+                "
+            >
+                <Linkedin size={18} />
+            </a>
+        </div>
     </header>
 
     <div class="relative min-h-[200vh]">
@@ -166,22 +226,16 @@
                             "
                         >
                             <SplitReveal
-                                mode="lines"
-                                class="text-center font-light leading-[0.80] text-foreground"
-                                style="
-                                    font-family: var(--font-serif);
-                                    font-size: clamp(3.5rem, 12vw, 10rem);
-                                    letter-spacing: -0.025em;
-                                "
+                                mode="chars"
+                                config={{
+                                    chars: { stagger: 0.03 },
+                                }}
+                                class="text-center leading-[0.85] text-foreground font-serif  text-9xl"
                             >
                                 Yassine<br />
                                 <span
-                                    class="text-center font-light text-foreground"
-                                    style="
-                                        font-family: var(--font-serif);
-                                        font-size: clamp(1.75rem, 12vw, 5rem);
-                                        letter-spacing: -0.025em;
-                                    ">Akhouayri</span
+                                    class="text-center text-foreground font-serif text-8xl"
+                                    >Akhouayri</span
                                 >
                             </SplitReveal>
                         </div>
@@ -194,17 +248,21 @@
                             "
                         >
                             <h2
-                                class="text-left text-xs font-bold text-foreground"
+                                class="text-left text-xs text-serif italic text-muted-foreground"
                                 style="
                                     font-family: var(--font-serif);
                                     font-size: 3.5rem;
                                 "
                             >
                                 A collection of <TextLoop
-                                    class="text-accent"
+                                    class="text-secondary-foreground"
                                     texts={["projects", "ideas", "experiments"]}
-                                    interval={1000}
-                                /> <br /> by Yassine.
+                                    interval={2000}
+                                /> <br />
+                                by
+                                <Highlighter color="#000000" action="underline"
+                                    >Yassine</Highlighter
+                                >
                             </h2>
                         </blockquote>
                     </section>
@@ -224,28 +282,13 @@
         `}
     >
         <section
-            class="flex min-h-screen flex-col items-center justify-center"
-            style="
-                gap: calc(var(--spacing) * 10);
-                padding-inline: calc(var(--spacing) * 10);
-                padding-block: calc(var(--spacing) * 20);
-            "
+            class="flex min-h-screen flex-col items-center justify-center gap-5"
         >
-            <div
-                class="flex flex-col items-center"
-                style="
-                    gap: calc(var(--spacing) * 5);
-                "
-            >
+            <div class="flex flex-col items-center gap-4">
                 <SplitReveal
                     triggerOnScroll={true}
                     mode="chars"
-                    class="font-light leading-none text-foreground"
-                    style="
-                                        font-family: var(--font-serif);
-                                        font-size: clamp(2.25rem, 5vw, 3.5rem);
-                                        letter-spacing: -0.025em;
-                                    "
+                    class="font-light leading-none text-foreground font-serif text-4xl"
                 >
                     About me
                 </SplitReveal>
@@ -255,12 +298,7 @@
                 delay={0.2}
                 lines.duration={0.02}
                 mode="lines"
-                class="text-left"
-                style="
-                                  width: calc(var(--spacing) * 200);
-                                  font-size: 1.25rem;
-                                  color: var(--foreground);
-                              "
+                class="text-left text-muted-foreground text-lg w-200 font-sans"
             >
                 Hi, I'm Yassine Akhouayri. I'm 18 years old and currently living
                 in Montreal, Canada. I’ve always been curious about how
@@ -294,35 +332,13 @@
             </SplitReveal>
         </section>
 
-        <section
-            class="min-h-screen"
-            style="
-                margin-top: calc(var(--spacing) * 200);
-                padding-inline: calc(var(--spacing) * 10);
-                padding-block: calc(var(--spacing) * 24);
-            "
-        >
-            <div
-                class="mx-auto flex w-full max-w-7xl flex-col"
-                style="
-                    gap: calc(var(--spacing) * 10);
-                "
-            >
-                <div
-                    class="flex flex-col items-center"
-                    style="
-                        gap: calc(var(--spacing) * 5);
-                    "
-                >
+        <section class="min-h-screen mt-100">
+            <div class="mx-auto flex w-full max-w-7xl flex-col gap-4">
+                <div class="flex flex-col items-center gap-5">
                     <SplitReveal
                         triggerOnScroll={true}
                         mode="chars"
-                        class="font-light leading-none text-foreground"
-                        style="
-                                            font-family: var(--font-serif);
-                                            font-size: clamp(2.25rem, 5vw, 3.5rem);
-                                            letter-spacing: -0.025em;
-                                        "
+                        class="font-light leading-none text-foreground font-serif text-4xl"
                     >
                         My work
                     </SplitReveal>
@@ -330,11 +346,7 @@
                         triggerOnScroll={true}
                         delay={0.2}
                         mode="lines"
-                        class="text-muted-foreground"
-                        style="
-                            max-width: 36rem;
-                            font-size: 1rem;
-                        "
+                        class="text-muted-foreground text-base w-100 font-sans"
                     >
                         My work focuses on building projects that help me
                         explore new ideas and improve my understanding of
@@ -344,7 +356,10 @@
                     </SplitReveal>
                 </div>
 
-                <div class="flex justify-center">
+                <div
+                    class="flex justify-center mt-5"
+                    bind:this={workCarouselSection}
+                >
                     <Carousel.Root
                         opts={{
                             align: "start",
@@ -388,12 +403,12 @@
                                             "
                                         >
                                             <h3
-                                                class="text-xl font-semibold text-foreground"
+                                                class="text-2xl font-serif text-foreground"
                                             >
                                                 {project.title}
                                             </h3>
                                             <p
-                                                class="text-sm leading-6 text-muted-foreground"
+                                                class="text-sm font-inter leading-6 text-muted-foreground"
                                             >
                                                 {project.description}
                                             </p>
@@ -404,11 +419,8 @@
                         </Carousel.Content>
 
                         <div
-                            class="flex items-center justify-center"
-                            style="
-                                margin-top: calc(var(--spacing) * 8);
-                                gap: calc(var(--spacing) * 4);
-                            "
+                            class="flex items-center justify-center mt-5 gap-4"
+                            data-carousel-controls
                         >
                             <Carousel.Previous
                                 class="static translate-y-0"
@@ -426,35 +438,13 @@
             </div>
         </section>
 
-        <section
-            class="min-h-screen"
-            style="
-                     margin-top: calc(var(--spacing) * 200);
-                     padding-inline: calc(var(--spacing) * 10);
-                     padding-block: calc(var(--spacing) * 24);
-                 "
-        >
-            <div
-                class="mx-auto flex w-full max-w-7xl flex-col"
-                style="
-                         gap: calc(var(--spacing) * 10);
-                     "
-            >
-                <div
-                    class="flex flex-col items-center"
-                    style="
-                             gap: calc(var(--spacing) * 5);
-                         "
-                >
+        <section class="min-h-screen">
+            <div class="mx-auto flex w-full max-w-7xl flex-col gap-4">
+                <div class="flex flex-col items-center gap-4">
                     <SplitReveal
                         triggerOnScroll={true}
                         mode="chars"
-                        class="font-light leading-none text-foreground"
-                        style="
-                                                 font-family: var(--font-serif);
-                                                 font-size: clamp(2.25rem, 5vw, 3.5rem);
-                                                 letter-spacing: -0.025em;
-                                             "
+                        class="font-light leading-none text-foreground font-serif text-4xl"
                     >
                         My tools
                     </SplitReveal>
@@ -462,11 +452,7 @@
                         triggerOnScroll={true}
                         delay={0.2}
                         mode="lines"
-                        class="text-muted-foreground"
-                        style="
-                                 max-width: 36rem;
-                                 font-size: 1rem;
-                             "
+                        class="text-muted-foreground w-100 text-base font-sans"
                     >
                         The tools I use to build and experiment with software,
                         from programming languages and frameworks to the editor
@@ -474,85 +460,7 @@
                     </SplitReveal>
                 </div>
 
-                <div class="flex justify-center">
-                    <Carousel.Root
-                        opts={{
-                            align: "start",
-                            loop: false,
-                        }}
-                        class="w-full max-w-6xl"
-                    >
-                        <Carousel.Content class="-ms-4">
-                            {#each projects as project}
-                                <Carousel.Item
-                                    class="ps-4 md:basis-1/2 xl:basis-1/3"
-                                >
-                                    <article
-                                        class="overflow-hidden transition-transform duration-300 hover:-translate-y-1"
-                                        style="
-                                                 border-radius: var(--radius-xl);
-                                                 border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
-                                                 background: color-mix(in oklab, var(--background) 70%, transparent);
-                                                 box-shadow: var(--shadow-sm);
-                                                 backdrop-filter: blur(calc(var(--spacing) * 1));
-                                             "
-                                    >
-                                        <div
-                                            class="aspect-16/10 overflow-hidden"
-                                            style="
-                                                     background: var(--muted);
-                                                 "
-                                        >
-                                            <img
-                                                src={project.thumbnail}
-                                                alt={project.title}
-                                                class="h-full w-full object-cover"
-                                            />
-                                        </div>
-
-                                        <div
-                                            class="flex flex-col"
-                                            style="
-                                                     gap: calc(var(--spacing) * 3);
-                                                     padding: calc(var(--spacing) * 6);
-                                                 "
-                                        >
-                                            <h3
-                                                class="text-xl font-semibold text-foreground"
-                                            >
-                                                {project.title}
-                                            </h3>
-                                            <p
-                                                class="text-sm leading-6 text-muted-foreground"
-                                            >
-                                                {project.description}
-                                            </p>
-                                        </div>
-                                    </article>
-                                </Carousel.Item>
-                            {/each}
-                        </Carousel.Content>
-
-                        <div
-                            class="flex items-center justify-center"
-                            style="
-                                     margin-top: calc(var(--spacing) * 8);
-                                     gap: calc(var(--spacing) * 4);
-                                 "
-                        >
-                            <Carousel.Previous
-                                class="static translate-y-0"
-                                size="icon-lg"
-                                variant="outline"
-                            />
-                            <Carousel.Next
-                                class="static translate-y-0"
-                                size="icon-lg"
-                                variant="outline"
-                            />
-                        </div>
-                    </Carousel.Root>
-                </div>
+                <div class="flex justify-center"></div>
             </div>
         </section>
     </div>
