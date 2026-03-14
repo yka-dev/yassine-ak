@@ -3,16 +3,7 @@
     import {
         Github,
         Linkedin,
-        Globe,
-        Braces,
-        Wind,
-        Zap,
-        Cpu,
-        Boxes,
-        ChartNoAxesCombined,
         X,
-        FileCode2,
-        Code,
     } from "@lucide/svelte";
     import gsap from "gsap";
     import { ScrollTrigger } from "gsap/ScrollTrigger";
